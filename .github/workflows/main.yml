@@ -25,6 +25,9 @@ jobs:
         with:
           channel: 'stable'
 
+      - name: Aceptar licencias del Android SDK (por si se necesita descargar Platform 36)
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
       - name: Generar carpeta android/ (solo si no existe todavía)
         run: |
           if [ ! -d "android" ]; then
@@ -36,6 +39,19 @@ jobs:
 
       - name: Aplicar ícono real de Contribia (launcher + adaptive icon)
         run: cp -r android_config/res/. android/app/src/main/res/
+
+      - name: Forzar compileSdk/targetSdk 36 (requerido por plugins actuales)
+        run: |
+          for f in android/app/build.gradle android/app/build.gradle.kts; do
+            if [ -f "$f" ]; then
+              echo "Parcheando $f"
+              sed -i 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 36/' "$f"
+              sed -i 's/compileSdkVersion flutter\.compileSdkVersion/compileSdkVersion 36/' "$f"
+              sed -i 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 36/' "$f"
+              sed -i 's/targetSdkVersion flutter\.targetSdkVersion/targetSdkVersion 36/' "$f"
+              grep -E "compileSdk|targetSdk" "$f" || true
+            fi
+          done
 
       - name: Instalar dependencias
         run: flutter pub get

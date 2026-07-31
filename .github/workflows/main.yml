@@ -56,23 +56,28 @@ jobs:
             fi
           done
 
-      - name: Forzar compileSdk 36 en TODOS los módulos (incluye los plugins como share_plus)
-        run: |
-          GROOVY_PATCH_B64="Ci8vIC0tLSBQYXJjaGUgQ29udHJpYmlhOiBmdWVyemEgY29tcGlsZVNkayAzNiBlbiBUT0RPUyBsb3MgbcOzZHVsb3MsIGluY2x1aWRvcyBsb3MgcGx1Z2lucyAtLS0Kc3VicHJvamVjdHMgewogICAgcGx1Z2lucy53aXRoSWQoJ2NvbS5hbmRyb2lkLmxpYnJhcnknKSB7CiAgICAgICAgYW5kcm9pZCB7CiAgICAgICAgICAgIGNvbXBpbGVTZGtWZXJzaW9uIDM2CiAgICAgICAgfQogICAgfQogICAgcGx1Z2lucy53aXRoSWQoJ2NvbS5hbmRyb2lkLmFwcGxpY2F0aW9uJykgewogICAgICAgIGFuZHJvaWQgewogICAgICAgICAgICBjb21waWxlU2RrVmVyc2lvbiAzNgogICAgICAgIH0KICAgIH0KfQo="
-          KOTLIN_PATCH_B64="Ci8vIC0tLSBQYXJjaGUgQ29udHJpYmlhOiBmdWVyemEgY29tcGlsZVNkayAzNiBlbiBUT0RPUyBsb3MgbcOzZHVsb3MsIGluY2x1aWRvcyBsb3MgcGx1Z2lucyAtLS0Kc3VicHJvamVjdHMgewogICAgcGx1Z2lucy53aXRoSWQoImNvbS5hbmRyb2lkLmxpYnJhcnkiKSB7CiAgICAgICAgZXh0ZW5zaW9ucy5jb25maWd1cmU8Y29tLmFuZHJvaWQuYnVpbGQuZ3JhZGxlLkxpYnJhcnlFeHRlbnNpb24+IHsKICAgICAgICAgICAgY29tcGlsZVNkayA9IDM2CiAgICAgICAgfQogICAgfQogICAgcGx1Z2lucy53aXRoSWQoImNvbS5hbmRyb2lkLmFwcGxpY2F0aW9uIikgewogICAgICAgIGV4dGVuc2lvbnMuY29uZmlndXJlPGNvbS5hbmRyb2lkLmJ1aWxkLmdyYWRsZS5pbnRlcm5hbC5kc2wuQmFzZUFwcE1vZHVsZUV4dGVuc2lvbj4gewogICAgICAgICAgICBjb21waWxlU2RrID0gMzYKICAgICAgICB9CiAgICB9Cn0K"
-          if [ -f "android/build.gradle" ]; then
-            echo "Parcheando android/build.gradle (raíz, Groovy)"
-            echo "$GROOVY_PATCH_B64" | base64 -d >> android/build.gradle
-          fi
-          if [ -f "android/build.gradle.kts" ]; then
-            echo "Parcheando android/build.gradle.kts (raíz, Kotlin)"
-            echo "$KOTLIN_PATCH_B64" | base64 -d >> android/build.gradle.kts
-          fi
-          echo "--- Contenido final del build.gradle raíz ---"
-          cat android/build.gradle 2>/dev/null || cat android/build.gradle.kts 2>/dev/null || true
-
       - name: Instalar dependencias
         run: flutter pub get
+
+      - name: Forzar compileSdk/targetSdk 36 directamente en los plugins descargados (pub-cache)
+        run: |
+          PUB_CACHE_DIR="${PUB_CACHE:-$HOME/.pub-cache}"
+          echo "Buscando build.gradle(.kts) de plugins en: $PUB_CACHE_DIR"
+          FILES=$(find "$PUB_CACHE_DIR" \( -path "*/android/build.gradle" -o -path "*/android/build.gradle.kts" \) 2>/dev/null)
+          if [ -z "$FILES" ]; then
+            echo "⚠️ No se encontraron archivos en $PUB_CACHE_DIR, probando $HOME/.pub-cache como respaldo…"
+            FILES=$(find "$HOME/.pub-cache" \( -path "*/android/build.gradle" -o -path "*/android/build.gradle.kts" \) 2>/dev/null)
+          fi
+          echo "$FILES" | while read -r f; do
+            [ -z "$f" ] && continue
+            echo "Parcheando: $f"
+            sed -i -E 's/^([[:space:]]*)compileSdkVersion .*/\1compileSdkVersion 36/' "$f"
+            sed -i -E 's/^([[:space:]]*)compileSdk[[:space:]]*=.*/\1compileSdk = 36/' "$f"
+            sed -i -E 's/^([[:space:]]*)targetSdkVersion .*/\1targetSdkVersion 36/' "$f"
+            sed -i -E 's/^([[:space:]]*)targetSdk[[:space:]]*=.*/\1targetSdk = 36/' "$f"
+          done
+          echo "--- Verificación: valores de compileSdk/targetSdk que quedaron en el pub-cache ---"
+          find "$PUB_CACHE_DIR" "$HOME/.pub-cache" \( -path "*/android/build.gradle" -o -path "*/android/build.gradle.kts" \) -exec grep -H -E "compileSdk|targetSdk" {} \; 2>/dev/null | sort -u
 
       - name: Compilar APK de release
         run: flutter build apk --release

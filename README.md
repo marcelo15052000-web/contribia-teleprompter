@@ -43,6 +43,25 @@ lo envía a su galería/WhatsApp/Drive con el botón **"Compartir"**
 (usa `share_plus`, que sí es estable). Si más adelante quieres guardado
 automático a galería, se puede retomar con un plugin distinto.
 
+## ⚠️ Importante: nunca subas la carpeta `android/` a tu repositorio
+
+Si ya la subiste en un intento anterior, **bórrala de GitHub** (o vuelve a
+subir todo el proyecto reemplazando el repositorio). El workflow ahora
+la regenera desde cero en cada build (`rm -rf android && flutter create...`),
+así siempre usa la configuración correcta y actualizada. Si queda una
+carpeta `android/` vieja guardada en el repo, el workflow no la toca y
+puedes volver a tener errores de `compileSdk` desactualizado. El
+`.gitignore` incluido ya la excluye para que esto no vuelva a pasar.
+
+## Nota de la versión: compileSdk forzado a 36
+
+Algunos plugins (`share_plus`, `wakelock_plus`, `package_info_plus`)
+requieren compilarse contra Android API 34 o superior, pero al regenerar
+el proyecto con `flutter create` a veces queda un `compileSdk` más bajo
+por defecto (ej. 33), lo que rompe el build. El workflow ahora parchea
+`android/app/build.gradle` después de crear el proyecto para forzar
+`compileSdk`/`targetSdk` a 36 explícitamente, evitando ese desface.
+
 ## Cómo obtener el APK (sin instalar nada en tu PC)
 
 Vas a usar **GitHub Actions**, que compila el APK gratis en la nube. Son

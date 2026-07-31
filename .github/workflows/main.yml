@@ -58,42 +58,15 @@ jobs:
 
       - name: Forzar compileSdk 36 en TODOS los módulos (incluye los plugins como share_plus)
         run: |
+          GROOVY_PATCH_B64="Ci8vIC0tLSBQYXJjaGUgQ29udHJpYmlhOiBmdWVyemEgY29tcGlsZVNkayAzNiBlbiBUT0RPUyBsb3MgbcOzZHVsb3MsIGluY2x1aWRvcyBsb3MgcGx1Z2lucyAtLS0Kc3VicHJvamVjdHMgewogICAgYWZ0ZXJFdmFsdWF0ZSB7IHByb2ogLT4KICAgICAgICBpZiAocHJvai5oYXNQcm9wZXJ0eSgnYW5kcm9pZCcpKSB7CiAgICAgICAgICAgIHByb2ouYW5kcm9pZCB7CiAgICAgICAgICAgICAgICBjb21waWxlU2RrVmVyc2lvbiAzNgogICAgICAgICAgICB9CiAgICAgICAgfQogICAgfQp9Cg=="
+          KOTLIN_PATCH_B64="Ci8vIC0tLSBQYXJjaGUgQ29udHJpYmlhOiBmdWVyemEgY29tcGlsZVNkayAzNiBlbiBUT0RPUyBsb3MgbcOzZHVsb3MsIGluY2x1aWRvcyBsb3MgcGx1Z2lucyAtLS0Kc3VicHJvamVjdHMgewogICAgYWZ0ZXJFdmFsdWF0ZSB7CiAgICAgICAgcGx1Z2lucy53aXRoSWQoImNvbS5hbmRyb2lkLmxpYnJhcnkiKSB7CiAgICAgICAgICAgIGV4dGVuc2lvbnMuY29uZmlndXJlPGNvbS5hbmRyb2lkLmJ1aWxkLmdyYWRsZS5MaWJyYXJ5RXh0ZW5zaW9uPiB7CiAgICAgICAgICAgICAgICBjb21waWxlU2RrID0gMzYKICAgICAgICAgICAgfQogICAgICAgIH0KICAgICAgICBwbHVnaW5zLndpdGhJZCgiY29tLmFuZHJvaWQuYXBwbGljYXRpb24iKSB7CiAgICAgICAgICAgIGV4dGVuc2lvbnMuY29uZmlndXJlPGNvbS5hbmRyb2lkLmJ1aWxkLmdyYWRsZS5pbnRlcm5hbC5kc2wuQmFzZUFwcE1vZHVsZUV4dGVuc2lvbj4gewogICAgICAgICAgICAgICAgY29tcGlsZVNkayA9IDM2CiAgICAgICAgICAgIH0KICAgICAgICB9CiAgICB9Cn0K"
           if [ -f "android/build.gradle" ]; then
             echo "Parcheando android/build.gradle (raíz, Groovy)"
-            cat >> android/build.gradle << 'GRADLE_EOF'
-
-// --- Parche Contribia: fuerza compileSdk 36 en TODOS los módulos, incluidos los plugins ---
-subprojects {
-    afterEvaluate { proj ->
-        if (proj.hasProperty('android')) {
-            proj.android {
-                compileSdkVersion 36
-            }
-        }
-    }
-}
-GRADLE_EOF
+            echo "$GROOVY_PATCH_B64" | base64 -d >> android/build.gradle
           fi
           if [ -f "android/build.gradle.kts" ]; then
             echo "Parcheando android/build.gradle.kts (raíz, Kotlin)"
-            cat >> android/build.gradle.kts << 'GRADLE_EOF'
-
-// --- Parche Contribia: fuerza compileSdk 36 en TODOS los módulos, incluidos los plugins ---
-subprojects {
-    afterEvaluate {
-        plugins.withId("com.android.library") {
-            extensions.configure<com.android.build.gradle.LibraryExtension> {
-                compileSdk = 36
-            }
-        }
-        plugins.withId("com.android.application") {
-            extensions.configure<com.android.build.gradle.internal.dsl.BaseAppModuleExtension> {
-                compileSdk = 36
-            }
-        }
-    }
-}
-GRADLE_EOF
+            echo "$KOTLIN_PATCH_B64" | base64 -d >> android/build.gradle.kts
           fi
           echo "--- Contenido final del build.gradle raíz ---"
           cat android/build.gradle 2>/dev/null || cat android/build.gradle.kts 2>/dev/null || true

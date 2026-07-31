@@ -1,0 +1,50 @@
+name: Build APK
+
+# Se ejecuta automáticamente al hacer push a main, o manualmente
+# desde la pestaña "Actions" de GitHub ("Run workflow").
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Instalar Flutter (última versión estable)
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Generar carpeta android/ (solo si no existe todavía)
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create --platforms=android --org com.contribia --project-name contribia_teleprompter .
+          fi
+
+      - name: Aplicar permisos personalizados (cámara, micrófono, etc.)
+        run: cp android_config/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+
+      - name: Aplicar ícono real de Contribia (launcher + adaptive icon)
+        run: cp -r android_config/res/. android/app/src/main/res/
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      - name: Compilar APK de release
+        run: flutter build apk --release
+
+      - name: Subir APK como artefacto descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: contribia-teleprompter-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

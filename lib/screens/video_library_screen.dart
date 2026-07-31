@@ -85,7 +85,25 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _videos.isEmpty
-              ? const Center(child: Text('Todavía no has grabado ningún video.', style: TextStyle(color: Colors.grey)))
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const BrandIconBadge(icon: Icons.video_library_rounded, size: 72, color: ContribiaColors.celeste),
+                        const SizedBox(height: 20),
+                        const Text('Todavía no has grabado videos', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Graba con el teleprompter y tus videos\naparecerán aquí.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _videos.length,
@@ -101,40 +119,46 @@ class _VideoLibraryScreenState extends State<VideoLibraryScreen> {
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.movie_outlined, color: ContribiaColors.celeste),
-                                const SizedBox(width: 8),
+                                const BrandIconBadge(icon: Icons.movie_rounded, color: ContribiaColors.celeste, size: 34),
+                                const SizedBox(width: 10),
                                 Expanded(
-                                  child: Text(video.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                                  child: Text(video.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
-                            Text('⏱ ${_formatDuration(video.durationSeconds)}',
-                                style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.timer_outlined, size: 13, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text(_formatDuration(video.durationSeconds),
+                                    style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w500)),
+                              ],
+                            ),
                             if (!exists)
                               const Padding(
                                 padding: EdgeInsets.only(top: 6),
                                 child: Text('⚠️ Archivo no encontrado en este dispositivo',
                                     style: TextStyle(color: Colors.orange, fontSize: 12)),
                               ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 12),
                             Wrap(
                               spacing: 8,
                               children: [
                                 OutlinedButton.icon(
                                   onPressed: () => _rename(video),
-                                  icon: const Icon(Icons.edit_outlined, size: 16),
+                                  icon: const Icon(Icons.edit_rounded, size: 16),
                                   label: const Text('Renombrar'),
                                 ),
                                 if (exists)
                                   OutlinedButton.icon(
                                     onPressed: () => Share.shareXFiles([XFile(video.filePath)], text: video.name),
-                                    icon: const Icon(Icons.share_outlined, size: 16),
+                                    icon: const Icon(Icons.share_rounded, size: 16),
                                     label: const Text('Compartir'),
                                   ),
                                 OutlinedButton.icon(
                                   onPressed: () => _delete(video),
-                                  icon: const Icon(Icons.delete_outline, size: 16, color: ContribiaColors.rojoRec),
+                                  icon: const Icon(Icons.delete_outline_rounded, size: 16, color: ContribiaColors.rojoRec),
                                   label: const Text('Eliminar', style: TextStyle(color: ContribiaColors.rojoRec)),
                                 ),
                               ],

@@ -76,9 +76,10 @@ class _HomeScreenState extends State<HomeScreen> {
         content: const Text('¿Seguro que deseas eliminar este guion? Esta acción no se puede deshacer.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          TextButton(
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: ContribiaColors.rojoRec),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Eliminar', style: TextStyle(color: ContribiaColors.rojoRec)),
+            child: const Text('Eliminar'),
           ),
         ],
       ),
@@ -91,7 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _formatDate(int millis) {
     final d = DateTime.fromMillisecondsSinceEpoch(millis);
-    return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    return '${d.day} ${meses[d.month - 1]}';
   }
 
   String _formatDuration(int seconds) {
@@ -102,26 +104,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
-            Image.asset('assets/images/contribia_logo.png', width: 32, height: 32),
-            const SizedBox(width: 10),
-            const Text('Contribia Teleprompter'),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(9),
+              child: Container(
+                width: 36,
+                height: 36,
+                color: Colors.white,
+                padding: const EdgeInsets.all(4),
+                child: Image.asset('assets/images/contribia_logo.png'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text('Contribia'),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.video_library_outlined),
+            icon: const Icon(Icons.video_library_rounded),
             tooltip: 'Mis videos',
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const VideoLibraryScreen()),
             ),
           ),
+          const SizedBox(width: 6),
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(Icons.settings_rounded),
             tooltip: 'Configuración',
             onPressed: () async {
               await Navigator.push(
@@ -131,42 +144,66 @@ class _HomeScreenState extends State<HomeScreen> {
               setState(() {});
             },
           ),
+          const SizedBox(width: 8),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createNewScript,
-        backgroundColor: ContribiaColors.azulOscuro,
-        icon: const Icon(Icons.add),
+        icon: const Icon(Icons.add_rounded),
         label: const Text('Nuevo Guion'),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _scripts.isEmpty
-              ? _buildEmptyState()
+              ? _buildEmptyState(context)
               : RefreshIndicator(
                   onRefresh: _loadScripts,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-                    itemCount: _scripts.length,
-                    itemBuilder: (ctx, i) => _buildScriptCard(_scripts[i]),
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          'Tus guiones',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      ..._scripts.map((s) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _buildScriptCard(context, s, isDark),
+                          )),
+                    ],
                   ),
                 ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text('📝', style: TextStyle(fontSize: 44)),
-            SizedBox(height: 12),
+          children: [
+            const BrandIconBadge(icon: Icons.description_rounded, size: 72, color: ContribiaColors.celeste),
+            const SizedBox(height: 20),
+            Text('Aún no tienes guiones', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 8),
             Text(
-              'Aún no tienes guiones.\nCrea tu primer guion para empezar a grabar.',
+              'Crea tu primer guion para empezar a grabar\ncon el teleprompter de Contribia.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color, height: 1.5),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: _createNewScript,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Crear guion'),
+              style: FilledButton.styleFrom(
+                backgroundColor: ContribiaColors.azulOscuro,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
             ),
           ],
         ),
@@ -174,54 +211,91 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildScriptCard(ScriptModel script) {
+  Widget _buildScriptCard(BuildContext context, ScriptModel script, bool isDark) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              script.title.isEmpty ? 'Sin título' : script.title,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 14,
-              children: [
-                Text('📅 ${_formatDate(script.updatedAt)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                Text('⏱ ${_formatDuration(script.estimatedSeconds)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                Text('🔤 ${script.wordCount} palabras', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _editScript(script),
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: const Text('Editar'),
+      child: InkWell(
+        onTap: () => _editScript(script),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const BrandIconBadge(icon: Icons.article_rounded, color: ContribiaColors.azulOscuro),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          script.title.isEmpty ? 'Sin título' : script.title,
+                          style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 4,
+                          children: [
+                            _metaChip(context, Icons.calendar_today_rounded, _formatDate(script.updatedAt)),
+                            _metaChip(context, Icons.timer_outlined, _formatDuration(script.estimatedSeconds)),
+                            _metaChip(context, Icons.short_text_rounded, '${script.wordCount} palabras'),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _recordScript(script),
-                    icon: const Icon(Icons.videocam_outlined, size: 18),
-                    label: const Text('Grabar'),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _deleteScript(script),
+                    icon: const Icon(Icons.delete_outline_rounded, color: ContribiaColors.rojoRec, size: 20),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => _deleteScript(script),
-                  icon: const Icon(Icons.delete_outline, color: ContribiaColors.rojoRec),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _editScript(script),
+                      icon: const Icon(Icons.edit_rounded, size: 17),
+                      label: const Text('Editar'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => _recordScript(script),
+                      icon: const Icon(Icons.videocam_rounded, size: 18),
+                      label: const Text('Grabar'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: ContribiaColors.azulOscuro,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _metaChip(BuildContext context, IconData icon, String label) {
+    final color = Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: color),
+        const SizedBox(width: 4),
+        Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500)),
+      ],
     );
   }
 }

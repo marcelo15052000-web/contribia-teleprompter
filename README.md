@@ -4,8 +4,9 @@ App nativa de teleprompter para grabación de videos, hecha con Flutter.
 Usa la cámara nativa de Android (`camera` package → Camera2 API), por lo
 que la calidad de video es la real del teléfono, no la limitada de una PWA.
 
-El ícono de la app usa tu logo real de Contribia (adaptive icon + ícono
-estándar en todas las densidades).
+El ícono de la app usa tu logo real de Contribia sobre **fondo blanco**
+(adaptive icon + ícono estándar en todas las densidades), para que el
+azul/verde del logo resalte en vez de perderse contra un fondo oscuro.
 
 ## Funciones incluidas
 
@@ -53,14 +54,17 @@ carpeta `android/` vieja guardada en el repo, el workflow no la toca y
 puedes volver a tener errores de `compileSdk` desactualizado. El
 `.gitignore` incluido ya la excluye para que esto no vuelva a pasar.
 
-## Nota de la versión: compileSdk forzado a 36
+## Nota de la versión: compileSdk forzado a 36 en TODOS los módulos
 
-Algunos plugins (`share_plus`, `wakelock_plus`, `package_info_plus`)
-requieren compilarse contra Android API 34 o superior, pero al regenerar
-el proyecto con `flutter create` a veces queda un `compileSdk` más bajo
-por defecto (ej. 33), lo que rompe el build. El workflow ahora parchea
-`android/app/build.gradle` después de crear el proyecto para forzar
-`compileSdk`/`targetSdk` a 36 explícitamente, evitando ese desface.
+El primer intento de arreglo solo forzaba `compileSdk` en el `build.gradle`
+de la app, pero el error real venía de los **plugins** (`share_plus`,
+`wakelock_plus`, etc.), que tienen su propio `build.gradle` interno (dentro
+del caché de paquetes de Flutter, fuera de este repositorio) apuntando a
+un `compileSdk` viejo. La solución correcta —y la que quedó aplicada en
+el workflow— agrega un bloque `subprojects { ... }` al `build.gradle` **raíz**
+de Android, que fuerza `compileSdk 36` en todos los módulos del proyecto
+(tu app + cada plugin), sin necesidad de tocar archivos fuera de tu
+repositorio.
 
 ## Cómo obtener el APK (sin instalar nada en tu PC)
 
@@ -144,3 +148,15 @@ como ícono, y graba correctamente, dime y agregamos: plantillas
 tributarias predefinidas (RUC, IVA, retenciones, declaraciones), pantalla
 de bienvenida (splash) con el logo, y biblioteca de videos con
 miniaturas.
+
+## Nota de la versión: rediseño visual completo
+
+Se renovó el tema de la app (`lib/theme.dart`) usando Material 3 con una
+paleta derivada de los colores de Contribia: `AppBar` sin sombra, tarjetas
+con bordes suaves y esquinas más redondeadas, botones con jerarquía clara
+(relleno para la acción principal, contorno para la secundaria), chips de
+metadatos con íconos, badges circulares de color por sección, y
+`Switch`/`Slider` tintados con el celeste de marca. Las pantallas de
+Inicio, Configuración y Mis Videos se reorganizaron sobre esta nueva base.
+El ícono de la app también cambió de fondo azul a **fondo blanco** para
+que el logo resalte en vez de perderse.

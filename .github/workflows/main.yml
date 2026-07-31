@@ -25,6 +25,9 @@ jobs:
         with:
           channel: 'stable'
 
+      - name: Diagnóstico — versión de Flutter instalada
+        run: flutter --version
+
       - name: Aceptar licencias del Android SDK (por si se necesita descargar Platform 36)
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
@@ -39,7 +42,7 @@ jobs:
       - name: Aplicar ícono real de Contribia (launcher + adaptive icon)
         run: cp -r android_config/res/. android/app/src/main/res/
 
-      - name: Forzar compileSdk/targetSdk 36 (requerido por plugins actuales)
+      - name: Forzar compileSdk/targetSdk 36 en el módulo de la app
         run: |
           for f in android/app/build.gradle android/app/build.gradle.kts; do
             if [ -f "$f" ]; then
@@ -52,6 +55,48 @@ jobs:
               grep -E "compileSdk|targetSdk" "$f" || true
             fi
           done
+
+      - name: Forzar compileSdk 36 en TODOS los módulos (incluye los plugins como share_plus)
+        run: |
+          if [ -f "android/build.gradle" ]; then
+            echo "Parcheando android/build.gradle (raíz, Groovy)"
+            cat >> android/build.gradle << 'GRADLE_EOF'
+
+// --- Parche Contribia: fuerza compileSdk 36 en TODOS los módulos, incluidos los plugins ---
+subprojects {
+    afterEvaluate { proj ->
+        if (proj.hasProperty('android')) {
+            proj.android {
+                compileSdkVersion 36
+            }
+        }
+    }
+}
+GRADLE_EOF
+          fi
+          if [ -f "android/build.gradle.kts" ]; then
+            echo "Parcheando android/build.gradle.kts (raíz, Kotlin)"
+            cat >> android/build.gradle.kts << 'GRADLE_EOF'
+
+// --- Parche Contribia: fuerza compileSdk 36 en TODOS los módulos, incluidos los plugins ---
+subprojects {
+    afterEvaluate {
+        plugins.withId("com.android.library") {
+            extensions.configure<com.android.build.gradle.LibraryExtension> {
+                compileSdk = 36
+            }
+        }
+        plugins.withId("com.android.application") {
+            extensions.configure<com.android.build.gradle.internal.dsl.BaseAppModuleExtension> {
+                compileSdk = 36
+            }
+        }
+    }
+}
+GRADLE_EOF
+          fi
+          echo "--- Contenido final del build.gradle raíz ---"
+          cat android/build.gradle 2>/dev/null || cat android/build.gradle.kts 2>/dev/null || true
 
       - name: Instalar dependencias
         run: flutter pub get

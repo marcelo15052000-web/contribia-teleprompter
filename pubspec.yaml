@@ -1,0 +1,42 @@
+name: contribia_teleprompter
+description: Teleprompter inteligente de Contribia para grabación de videos.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+
+  # Cámara y grabación
+  camera: ^0.10.6
+
+  # Base de datos local (guiones y metadatos de video)
+  sqflite: ^2.3.2
+  path: ^1.9.0
+  path_provider: ^2.1.2
+
+  # Compartir video
+  share_plus: ^7.2.2
+
+  # Mantener pantalla encendida durante la grabación
+  wakelock_plus: ^1.2.4
+
+  # Preferencias simples (velocidad, tamaño de letra, tema)
+  shared_preferences: ^2.2.2
+
+  # UUID para IDs de guiones/videos
+  uuid: ^4.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/contribia_logo.png

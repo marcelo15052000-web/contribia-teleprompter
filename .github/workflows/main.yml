@@ -28,11 +28,10 @@ jobs:
       - name: Aceptar licencias del Android SDK (por si se necesita descargar Platform 36)
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Generar carpeta android/ (solo si no existe todavía)
+      - name: Generar carpeta android/ (siempre desde cero, para no arrastrar configuraciones viejas)
         run: |
-          if [ ! -d "android" ]; then
-            flutter create --platforms=android --org com.contribia --project-name contribia_teleprompter .
-          fi
+          rm -rf android
+          flutter create --platforms=android --org com.contribia --project-name contribia_teleprompter .
 
       - name: Aplicar permisos personalizados (cámara, micrófono, etc.)
         run: cp android_config/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
@@ -45,10 +44,11 @@ jobs:
           for f in android/app/build.gradle android/app/build.gradle.kts; do
             if [ -f "$f" ]; then
               echo "Parcheando $f"
-              sed -i 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 36/' "$f"
-              sed -i 's/compileSdkVersion flutter\.compileSdkVersion/compileSdkVersion 36/' "$f"
-              sed -i 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 36/' "$f"
-              sed -i 's/targetSdkVersion flutter\.targetSdkVersion/targetSdkVersion 36/' "$f"
+              sed -i -E 's/^([[:space:]]*)compileSdkVersion .*/\1compileSdkVersion 36/' "$f"
+              sed -i -E 's/^([[:space:]]*)compileSdk[[:space:]]*=.*/\1compileSdk = 36/' "$f"
+              sed -i -E 's/^([[:space:]]*)targetSdkVersion .*/\1targetSdkVersion 36/' "$f"
+              sed -i -E 's/^([[:space:]]*)targetSdk[[:space:]]*=.*/\1targetSdk = 36/' "$f"
+              echo "--- Resultado ---"
               grep -E "compileSdk|targetSdk" "$f" || true
             fi
           done
